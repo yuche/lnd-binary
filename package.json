@@ -1,6 +1,6 @@
 {
   "name": "lnd-install",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Download the latest lnd binary",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "unbuild",
-    "postinstall": "npm run build && node ./dist/bin/lnd-install.mjs"
+    "postinstall": "node ./dist/bin/lnd-install.mjs"
   },
   "files": [
     ".babelrc",
