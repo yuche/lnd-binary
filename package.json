@@ -17,10 +17,10 @@
     "config",
     "src",
     "lib",
-    "src"
+    "dist"
   ],
   "bin": {
-    "lnd-install": "./dist/bin/lnd-install"
+    "lnd-install": "./dist/bin/lnd-install.mjs"
   },
   "pre-push": [
     "lint",

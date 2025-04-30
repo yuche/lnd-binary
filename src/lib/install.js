@@ -8,6 +8,7 @@ import { fetch } from './fetch'
 import { verify } from './verify'
 import support from './support'
 import lnd from './extensions'
+import pkg from './package'
 
 
 /**
