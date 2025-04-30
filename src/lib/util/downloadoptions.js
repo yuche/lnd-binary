@@ -1,5 +1,5 @@
-import proxy from './proxy'
-import useragent from './useragent'
+import {proxy} from './proxy'
+import {useragent} from './useragent'
 
 /**
  * The options passed to request when downloading the binary

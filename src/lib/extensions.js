@@ -1,11 +1,11 @@
 import fs from 'fs-extra'
 import path from 'path'
-import goenv from 'go-platform'
+import goenv from './go'
 import trueCasePathSync from 'true-case-path'
 import { tmpdir } from 'os'
 import support from './support'
 import { config } from './config'
-import * as pkg from '../../package.json'
+import pkg from './package'
 
 export const DEFAULT_BINARY_URL = 'https://github.com/lightningnetwork/lnd/releases/download'
 
@@ -235,7 +235,7 @@ function getBinaryDir() {
   } else if (config && config.binaryDir) {
     binaryDir = config.binaryDir
   } else {
-    binaryDir = path.join(__dirname, '..', '..', 'vendor')
+    binaryDir = path.join(new URL('.', import.meta.url).pathname, '..', '..', 'vendor')
   }
 
   return path.resolve(binaryDir)

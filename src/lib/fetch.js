@@ -1,10 +1,10 @@
 import fs from 'fs-extra'
 import path from 'path'
 import axios from 'axios'
-import log from 'npmlog'
-import downloadoptions from './util/downloadoptions'
-import * as pkg from '../../package.json'
+import log from 'consola'
+import {downloadoptions} from './util/downloadoptions'
 import createDebug from 'debug'
+import pkg from './package'
 
 const debug = createDebug(pkg.name)
 
@@ -12,7 +12,6 @@ const debug = createDebug(pkg.name)
 export const fetch = (url, dest) => {
   debug('fetch: %o', { url, dest })
 
-  log.info(pkg.name, 'Downloading', url)
 
   return axios(
     Object.assign(

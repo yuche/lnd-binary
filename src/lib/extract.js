@@ -3,11 +3,11 @@ import path from 'path'
 import gunzip from 'gunzip-maybe'
 import tar from 'tar-fs'
 import unzip from 'unzip-stream'
-import log from 'npmlog'
+import log from 'consola'
 import support from './support'
 import lnd from './extensions'
-import * as pkg from '../../package.json'
 import createDebug from 'debug'
+import pkg from './package'
 
 const debug = createDebug(pkg.name)
 
@@ -22,7 +22,6 @@ export const extract = (archive, dest) => {
   const stream = fs.createReadStream(archive)
 
   const moveToDest = (cb) => {
-    log.info(pkg.name, 'Extracted lnd archive to', archiveDir)
 
     // Make sure the binary is executable.
     try {
@@ -37,7 +36,6 @@ export const extract = (archive, dest) => {
       return cb(error)
     }
     fs.copyFileSync(downloadedLndBinary, dest)
-    log.info(pkg.name, 'Moved lnd binary to', dest)
     return cb()
   }
 

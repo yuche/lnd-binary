@@ -4,7 +4,6 @@
  * Script that will install lnd.
  */
 
-import path from 'path'
 
 import { install } from '../lib/install'
 

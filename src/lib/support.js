@@ -1,10 +1,13 @@
-import log from 'npmlog'
-import * as pkg from '../../package.json'
+import log from 'consola'
+import pkg from './package'
 import manifest from '../../config/manifest.json'
+import createDebug from 'debug'
+
+const debug = createDebug(pkg.name)
 
 // The packages we support
-const supportedPlatforms = ['linux', 'darwin', 'windows', 'freebsd']
-const supportedArchs = ['amd64', '386', 'arm']
+const supportedPlatforms = ['linux', 'darwin', 'windows', 'freebsd', 'netbsd', 'openbsd']
+const supportedArchs = ['amd64', '386', 'arm', 'arm64', 'mips', 'mips64', 'mipsle', 'ppc64', 'ppc64le', 's390x']
 const supportedVersions = Object.keys(manifest)
 
 // Check functions
@@ -28,7 +31,9 @@ function verify(version, platform, arch) {
   }
 
   if (!isSupportedVersion(version)) {
-    log.warn(pkg.name, `Version '${version}' not an officially supported lnd version`)
+    log.warn(pkg.name, `Version '${version}' not in local manifest.json`)
+    log.info(pkg.name, `Will attempt to download from GitHub releases and verify against online manifest`)
+    
   }
 
   return true

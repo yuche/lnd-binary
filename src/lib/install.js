@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'path'
-import log from 'npmlog'
+import log from 'consola'
 import cacache from 'cacache'
 import { cache } from './cache'
 import { extract } from './extract'
@@ -8,10 +8,7 @@ import { fetch } from './fetch'
 import { verify } from './verify'
 import support from './support'
 import lnd from './extensions'
-import * as pkg from '../../package.json'
-import createDebug from 'debug'
 
-const debug = createDebug(pkg.name)
 
 /**
  * Check and download binary
@@ -21,7 +18,6 @@ const debug = createDebug(pkg.name)
 
 export const install = () => {
   if (process.env.SKIP_LND_BINARY_DOWNLOAD_FOR_CI) {
-    log.info(pkg.name, 'Skipping downloading binaries on CI builds')
     return
   }
 
@@ -34,7 +30,6 @@ export const install = () => {
   try {
     support.verify(version, platform, arch)
   } catch (err) {
-    log.error(pkg.name, err.message)
     return Promise.reject(err)
   }
 

@@ -1,12 +1,31 @@
 import fs from 'fs-extra'
 import path from 'path'
-import hasha from 'hasha'
-import log from 'npmlog'
+import { hashFile } from 'hasha'
+import log from 'consola'
+import axios from 'axios'
 import lnd, { DEFAULT_BINARY_URL } from '../lib/extensions'
-import * as pkg from '../../package.json'
+import pkg from './package'
+
 import createDebug from 'debug'
 
 const debug = createDebug(pkg.name)
+
+// 从在线manifest文件解析校验和
+const parseManifestFile = (content, binaryName) => {
+  const lines = content.split('\n')
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/)
+    if (parts.length >= 2) {
+      const hash = parts[0]
+      const file = parts[1]
+      
+      if (file === binaryName) {
+        return hash
+      }
+    }
+  }
+  return null
+}
 
 // Verify the binary archive.
 export const verify = (filepath) => {
@@ -16,37 +35,67 @@ export const verify = (filepath) => {
     return Object.keys(object).find((key) => object[key] === value)
   }
 
-  const manifestPath = path.join(__dirname, '..', '..', 'config', 'manifest.json')
-  const manifest = fs.readJsonSync(manifestPath)
-  const checksums = manifest[lnd.getBinaryVersion()]
-
+  const binaryVersion = lnd.getBinaryVersion()
+  const binaryName = lnd.getBinaryName() + lnd.getBinaryExtension()
+  
+  // 当使用自定义下载地址时跳过验证
   if (lnd.getBinarySite() !== DEFAULT_BINARY_URL) {
     log.warn(`Skipping checksum validation. Unknown binary site.`)
     return Promise.resolve()
   }
-
-  if (!checksums) {
-    log.warn(`Checksum for ${lnd.getBinaryVersion()} unknown. Unable to verify release.`)
-    return Promise.resolve()
-  }
-
-  const checksum = getKeyByValue(checksums, lnd.getBinaryName() + lnd.getBinaryExtension())
-  debug('Verifying archive against checksum', checksum)
-
-  return hasha
-    .fromFile(filepath, { algorithm: 'sha256' })
-    .then((hash) => {
-      debug('Generated hash from downloaded file', hash)
-
-      if (checksum === hash) {
-        log.info(pkg.name, 'Verified checksum of downloaded file')
-        return filepath
+  
+  // 尝试从GitHub下载manifest文件
+  const manifestUrl = `${DEFAULT_BINARY_URL}/v${binaryVersion}/manifest-v${binaryVersion}.txt`
+  debug(`Trying to download manifest from: ${manifestUrl}`)
+  
+  return axios.get(manifestUrl)
+    .then(response => {
+      const content = response.data
+      debug('Downloaded manifest file successfully')
+      
+      // 从manifest文件解析出校验和
+      const checksum = parseManifestFile(content, binaryName)
+      
+      if (!checksum) {
+        log.warn(`Could not find checksum for ${binaryName} in online manifest`)
+        if (process.env.LND_BINARY_SKIP_VERIFY === 'true') {
+          log.warn(`LND_BINARY_SKIP_VERIFY is set to true. Skipping verification.`)
+          return Promise.resolve()
+        }
+        return Promise.reject(new Error(`Could not find checksum for ${binaryName}`))
       }
-      log.error(pkg.name, 'Checksum did not match')
-      return Promise.reject(new Error('Checksum did not match'))
+      
+      debug('Verifying archive against online checksum', checksum)
+      
+      return hashFile(filepath, { algorithm: 'sha256' })
+        .then((hash) => {
+          debug('Generated hash from downloaded file', hash)
+
+          if (checksum === hash) {
+            log.info(pkg.name, 'Verified checksum of downloaded file against online manifest')
+            return filepath
+          }
+          
+          log.error(pkg.name, 'Checksum did not match online manifest')
+          
+          if (process.env.LND_BINARY_SKIP_VERIFY === 'true') {
+            log.warn(`LND_BINARY_SKIP_VERIFY is set to true. Proceeding despite checksum mismatch.`)
+            return filepath
+          }
+          
+          return Promise.reject(new Error('Checksum did not match online manifest'))
+        })
     })
-    .catch((err) => {
-      log.error(pkg.name, 'Error verifying checksum of downloaded file', err)
-      return Promise.reject(err)
+    .catch(err => {
+      debug('Failed to verify using online manifest:', err.message)
+      log.warn(`Could not verify against online manifest: ${err.message}`)
+      
+      if (process.env.LND_BINARY_SKIP_VERIFY === 'true') {
+        log.warn(`LND_BINARY_SKIP_VERIFY is set to true. Skipping verification.`)
+        return Promise.resolve()
+      }
+      
+      log.warn(`If you want to skip verification, set the environment variable LND_BINARY_SKIP_VERIFY=true`)
+      return Promise.reject(new Error(`Verification failed: ${err.message}`))
     })
 }
